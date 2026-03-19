@@ -1,0 +1,9 @@
+.env
+cache/
+logs/
+*.mp3
+__pycache__/
+*.pyc
+*.pptx
+demo_data/
+.DS_Store

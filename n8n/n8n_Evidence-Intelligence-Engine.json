@@ -1,0 +1,1425 @@
+{
+  "name": "Evidence Intelligence Engine",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Evidence Intelligence Engine",
+        "formDescription": "Submit a research request. A structured evidence brief will be auto-generated and delivered to Google Docs, Sheets, and Slack.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Input Mode",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Research Question"
+                  },
+                  {
+                    "option": "Meeting Transcript"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Research Question",
+              "fieldType": "textarea",
+              "placeholder": "e.g. What is the current evidence on malaria net distribution in East Africa? Leave blank if submitting a transcript below."
+            },
+            {
+              "fieldLabel": "Meeting Transcript",
+              "fieldType": "textarea",
+              "placeholder": "Paste meeting transcript here. Research need, program area and region will be extracted automatically. Leave blank if entering a research question above."
+            },
+            {
+              "fieldLabel": "Program Area",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Malaria"
+                  },
+                  {
+                    "option": "Maternal Health"
+                  },
+                  {
+                    "option": "Vaccines"
+                  },
+                  {
+                    "option": "Nutrition"
+                  },
+                  {
+                    "option": "Digital Health"
+                  },
+                  {
+                    "option": "Health Systems"
+                  },
+                  {
+                    "option": "Unknown"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Geographic Region",
+              "placeholder": "e.g. Sub-Saharan Africa, South Asia. UNKNOWN if submitting a transcript.",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Audience Type",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Donor Brief"
+                  },
+                  {
+                    "option": "Internal Team"
+                  },
+                  {
+                    "option": "Executive Summary"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Urgency",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Standard"
+                  },
+                  {
+                    "option": "Priority"
+                  }
+                ]
+              },
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.5,
+      "position": [
+        -256,
+        -112
+      ],
+      "id": "d43d2bbb-0000-4034-b0bd-f0eba0b6d340",
+      "name": "Evidence Intelligence Engine",
+      "webhookId": "af33d866-3629-42f8-9e22-ac7036b3897c"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "claude-opus-4-5-20251101",
+          "mode": "list",
+          "cachedResultName": "claude-opus-4-5-20251101"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "You are a senior research strategist at [Your Organization], a global health \nand development nonprofit.\n\nYour job is to take a research request and produce a precise, \nstructured research plan that will guide evidence gathering.\n\nYou handle two input modes:\n\nMODE 1 — Research Question:\nThe question is explicitly provided.\nRefine it into a more precise, searchable version.\n\nMODE 2 — Meeting Transcript:\nExtract the primary research need from the transcript.\nIdentify program area and region from context.\n\nFALLBACK RULES for Mode 2 — apply strictly:\n- If program area is ambiguous or not mentioned → program_area = \"UNKNOWN\"\n- If region is ambiguous or not mentioned → region = \"UNKNOWN\"\n- If EITHER is UNKNOWN → set extraction_confidence = \"LOW\"\n  and human_review_flag = true\n- NEVER guess or infer loosely.\n  Uncertain = UNKNOWN.\n  Silent misclassification is worse than a flagged unknown.\n\nOUTPUT RULES:\n- Respond in valid JSON only\n- No explanation, no preamble, no markdown code blocks\n- No text outside the JSON object\n- Start your response with { and end with }",
+              "role": "assistant"
+            },
+            {
+              "content": "=Input Mode: {{ $json[\"Input Mode\"] }}\n\nResearch Question: {{ $json[\"Research Question\"] }}\n\nMeeting Transcript: {{ $json[\"Meeting Transcript\"] }}\n\nProgram Area (form): {{ $json[\"Program Area\"] }}\nRegion (form): {{ $json[\"Geographic Region\"] }}\nAudience: {{ $json[\"Audience Type\"] }}\nUrgency: {{ $json[\"Urgency\"] }}\n\nProduce a structured research plan in this exact JSON format:\n\n{\n  \"original_input_mode\": \"Research Question or Meeting Transcript\",\n  \"original_question\": \"the question as submitted or extracted from transcript\",\n  \"refined_question\": \"precise, searchable version of the question\",\n  \"program_area\": \"confirmed program area or UNKNOWN\",\n  \"region\": \"confirmed region or UNKNOWN\",\n  \"audience\": \"audience type\",\n  \"urgency\": \"Standard or Priority\",\n  \"extraction_confidence\": \"HIGH or LOW\",\n  \"human_review_flag\": false,\n  \"human_review_reason\": \"null or reason if flag is true\",\n  \"sub_questions\": [\n    \"specific researchable aspect 1\",\n    \"specific researchable aspect 2\",\n    \"specific researchable aspect 3\"\n  ],\n  \"search_queries\": [\n    \"query 1 — specific, keyword-rich, source-targeted\",\n    \"query 2 — different angle on same topic\",\n    \"query 3 — implementation or programmatic angle\"\n  ],\n  \"academic_search_queries\": [\n    \"query 1 for peer-reviewed academic search\",\n    \"query 2 for systematic reviews and meta-analyses\"\n  ],\n  \"expected_source_types\": [\n    \"WHO guidelines\",\n    \"peer reviewed journals\",\n    \"USAID or donor reports\",\n    \"NGO program evaluations\"\n  ],\n  \"quality_threshold\": \"HIGH\"\n}\n"
+            }
+          ]
+        },
+        "simplify": false,
+        "options": {
+          "maxTokens": 1500,
+          "temperature": 0.3
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.anthropic",
+      "typeVersion": 1,
+      "position": [
+        208,
+        0
+      ],
+      "id": "f1adc1ea-94ce-4f65-9e15-ec41b586780c",
+      "name": "Research Planner",
+      "credentials": {
+        "anthropicApi": {
+          "id": "YOUR_N8N_ANTHROPIC_CRED_ID",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = items[0];\n\n// Claude output is in content[0].text\nconst rawText = raw.json.content[0].text;\n\nlet cleaned = rawText\n  .replace(/```json\\n?/gi, '')\n  .replace(/```\\n?/gi, '')\n  .trim();\n\nlet parsed;\ntry {\n  parsed = JSON.parse(cleaned);\n} catch (e) {\n  return [{ json: {\n    parse_error: true,\n    error_message: e.message,\n    raw_text: rawText.substring(0, 500)\n  }}];\n}\n\nconst flag = (parsed.program_area === \"UNKNOWN\" || parsed.region === \"UNKNOWN\")\n  ? true\n  : (parsed.human_review_flag ?? false);\n\nconst reason = (parsed.program_area === \"UNKNOWN\" || parsed.region === \"UNKNOWN\")\n  ? \"Program area or region is UNKNOWN — manual classification required\"\n  : (parsed.human_review_reason ?? null);\n\nreturn [{\n  json: {\n    original_input_mode:     parsed.original_input_mode     ?? \"Research Question\",\n    original_question:       parsed.original_question       ?? \"UNKNOWN\",\n    refined_question:        parsed.refined_question        ?? \"UNKNOWN\",\n    program_area:            parsed.program_area            ?? \"UNKNOWN\",\n    region:                  parsed.region                  ?? \"UNKNOWN\",\n    audience:                parsed.audience                ?? \"UNKNOWN\",\n    urgency:                 parsed.urgency                 ?? \"Standard\",\n    extraction_confidence:   parsed.extraction_confidence   ?? \"LOW\",\n    human_review_flag:       flag,\n    human_review_reason:     reason,\n    sub_questions:           parsed.sub_questions           ?? [],\n    search_queries:          parsed.search_queries          ?? [],\n    academic_search_queries: parsed.academic_search_queries ?? [],\n    expected_source_types:   parsed.expected_source_types   ?? [],\n    quality_threshold:       parsed.quality_threshold       ?? \"HIGH\"\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        0
+      ],
+      "id": "7266462d-ac49-4288-b613-de4ca026e479",
+      "name": "Parse Planner"
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = items[0];\n\n// Get trigger_id if this came from meeting pipeline\n// If manual form submission, generate one from question + timestamp\nconst question = raw.json.original_question ?? \"unknown\";\nconst timestamp = new Date().toISOString();\nconst triggerId = raw.json.trigger_id ?? \n  (question.substring(0, 40) + \"-\" + timestamp).replace(/\\s+/g, '-');\n\nreturn [{\n  json: {\n    ...raw.json,\n    trigger_id: triggerId,\n    iteration_count: 0,\n    max_iterations: 2,\n    duplicate: false\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        768,
+        0
+      ],
+      "id": "8d95adc6-38a4-4ca3-97f1-493f19fc14b3",
+      "name": "Loop Counter + Idempotency"
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = items[0].json;\n\nconst userMessage = d.search_queries[0]\n  + '. Also search for: ' + d.search_queries[1]\n  + '. And: ' + d.search_queries[2]\n  + '. Context: This is for a ' + d.audience\n  + ' on ' + d.program_area\n  + ' in ' + d.region\n  + '. Refined question: ' + d.refined_question;\n\nreturn [{\n  json: {\n    ...d,\n    request_body: {\n      model: \"sonar\",\n      messages: [\n        {\n          role: \"system\",\n          content: \"You are a global health research assistant for [Your Organization]. Search for credible recent evidence from WHO, peer-reviewed journals, USAID, Malaria Consortium, and NGO sources. Include source URLs and publication dates. Prioritize 2023-2024 sources.\"\n        },\n        {\n          role: \"user\",\n          content: userMessage\n        }\n      ],\n      max_tokens: 2000,\n      temperature: 0.2,\n      search_context_size: \"high\"\n    }\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        976,
+        0
+      ],
+      "id": "d2fce593-0c64-4e74-b770-d109df249c27",
+      "name": "Web Search - Perplexity"
+    },
+    {
+      "parameters": {
+        "jsCode": "// HTTP node output lost the planning data — pull it back from the last Code node\nconst planning = $('Loop Counter + Idempotency').first().json;\nconst httpResponse = items[0].json;\n\nconst userMessage = planning.academic_search_queries[0]\n  + '. Also search: ' + (planning.academic_search_queries[1] ?? planning.academic_search_queries[0])\n  + '. Focus on peer-reviewed journals, systematic reviews, RCTs and WHO reports for a '\n  + planning.audience + ' brief on ' + planning.program_area + ' in ' + planning.region;\n\nreturn [{\n  json: {\n    ...planning,\n    web_result: httpResponse,\n    request_body: JSON.stringify({\n      model: \"sonar-pro\",\n      messages: [\n        {\n          role: \"system\",\n          content: \"You are an academic research specialist for [Your Organization]. Search exclusively for peer-reviewed publications, systematic reviews, meta-analyses, Cochrane reviews, WHO technical reports, and RCTs directly related to the topic. Include full title, journal, year, and URL for every source. Prioritize 2022 onwards.\"\n        },\n        {\n          role: \"user\",\n          content: userMessage\n        }\n      ],\n      max_tokens: 2000,\n      temperature: 0.1,\n      search_context_size: \"high\"\n    })\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1392,
+        0
+      ],
+      "id": "202a656d-cf73-4626-955c-5e81c5cb9f06",
+      "name": "Academic Search - Perplexity"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Academic HTTP response is in items[0].json\nconst academicRaw = items[0].json;\n\n// Pull planning data from Loop Counter — always has all fields intact\nconst planningData = $('Loop Counter + Idempotency').first().json;\n\n// Pull web result directly from the Web HTTP node\nconst webRaw = $('Call Perplexity Web').first().json;\nconst webItem = {\n  choices:   webRaw.choices   ?? [],\n  citations: webRaw.citations ?? []\n};\n\nconst academicItem = {\n  choices:        academicRaw.choices        ?? [],\n  citations:      academicRaw.citations      ?? [],\n  search_results: academicRaw.search_results ?? []\n};\n\nconst webContent      = webItem?.choices?.[0]?.message?.content ?? \"No web results found\";\nconst webCitations    = webItem?.citations ?? [];\n\nconst academicContent = academicItem.choices?.[0]?.message?.content ?? \"No academic results found\";\nconst academicCitations = academicItem.citations ?? [];\nconst academicSources   = academicItem.search_results ?? [];\n\nconst allCitations = [...new Set([...webCitations, ...academicCitations])];\n\nconst allSources = academicSources.length > 0\n  ? academicSources\n  : allCitations.map((url, i) => ({\n      url,\n      title: \"Source \" + (i + 1),\n      date: \"2026\",\n      snippet: \"\"\n    }));\n\nconst structuredSources = allSources.map((s, i) => ({\n  number: i + 1,\n  title: s.title ?? \"Unknown\",\n  url: s.url ?? \"\",\n  publication_date: s.date ?? \"Unknown\",\n  source_type:\n    !s.url                          ? \"Unknown\" :\n    s.url.includes(\"who.int\")       ? \"WHO / Multilateral\" :\n    s.url.includes(\"pubmed\") ||\n    s.url.includes(\"pmc.ncbi\")      ? \"Peer-reviewed Journal\" :\n    s.url.includes(\"cochrane\")      ? \"Systematic Review\" :\n    s.url.includes(\"thelancet\") ||\n    s.url.includes(\"bmj\") ||\n    s.url.includes(\"plos\") ||\n    s.url.includes(\"nature.com\") ||\n    s.url.includes(\"sciencedirect\") ||\n    s.url.includes(\"springer\") ||\n    s.url.includes(\"oxford\") ||\n    s.url.includes(\"wiley\") ||\n    s.url.includes(\"elsevier\") ||\n    s.url.includes(\"nejm.org\") ||\n    s.url.includes(\"jamanetwork\") ||\n    s.url.includes(\"academic.oup\")  ? \"Peer-reviewed Journal\" :\n    s.url.includes(\"usaid\") ||\n    s.url.includes(\"pmi\") ||\n    s.url.includes(\"givewell\")      ? \"Donor / Government\" :\n    s.url.includes(\"unicef\") ||\n    s.url.includes(\"worldbank\")     ? \"WHO / Multilateral\" :\n                                      \"NGO / Programme Report\",\n  region_relevance: \"To be assessed\",\n  snippet: s.snippet ?? \"\"\n}));\n\nreturn [{\n  json: {\n    original_input_mode:     planningData.original_input_mode     ?? \"Research Question\",\n    original_question:       planningData.original_question       ?? \"\",\n    refined_question:        planningData.refined_question        ?? \"\",\n    program_area:            planningData.program_area            ?? \"UNKNOWN\",\n    region:                  planningData.region                  ?? \"UNKNOWN\",\n    audience:                planningData.audience                ?? \"UNKNOWN\",\n    urgency:                 planningData.urgency                 ?? \"Standard\",\n    extraction_confidence:   planningData.extraction_confidence   ?? \"LOW\",\n    human_review_flag:       planningData.human_review_flag       ?? false,\n    human_review_reason:     planningData.human_review_reason     ?? null,\n    iteration_count:         planningData.iteration_count         ?? 0,\n    max_iterations:          planningData.max_iterations          ?? 2,\n    trigger_id:              planningData.trigger_id              ?? \"\",\n    sub_questions:           planningData.sub_questions           ?? [],\n    search_queries:          planningData.search_queries          ?? [],\n    academic_search_queries: planningData.academic_search_queries ?? [],\n    quality_threshold:       planningData.quality_threshold       ?? \"HIGH\",\n    web_search_content:      webContent,\n    academic_search_content: academicContent,\n    all_citations:           allCitations,\n    structured_sources:      structuredSources,\n    total_sources_found:     allCitations.length\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1808,
+        0
+      ],
+      "id": "acd6b61a-9482-4635-b445-a076723fc903",
+      "name": "Combine Search Output"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.perplexity.ai/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_PERPLEXITY_API_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify($json.request_body) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1184,
+        0
+      ],
+      "id": "d959fdb5-aeb1-4e67-ac73-83cfbcb96d44",
+      "name": "Call Perplexity Web"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.perplexity.ai/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_PERPLEXITY_API_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $json.request_body }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1600,
+        0
+      ],
+      "id": "ec9dc153-52c0-4ee2-b541-c46314b9c56e",
+      "name": "Call Perplexity Academic"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "claude-opus-4-5-20251101",
+          "mode": "list",
+          "cachedResultName": "claude-opus-4-5-20251101"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "You are a research quality evaluator at [Your Organization].\n\nYour only job is to assess whether the evidence gathered is \nsufficient to write a high-quality brief for the stated audience.\n\nWEAKNESS TYPES — pick exactly one if insufficient:\n- INSUFFICIENT_VOLUME: Too few sources or too little content\n- LOW_QUALITY: Sources not specific enough to topic or region\n- CONFLICT: Sources directly contradict each other\n- OUTDATED: Evidence exists but is older than 2022\n\nFORCE PROCEED RULE:\nIf iteration_count >= max_iterations → always set evidence_decision = PROCEED\nand human_review_flag = true regardless of quality.\n\nOUTPUT RULES:\n- Respond in valid JSON only\n- No explanation, no preamble, no markdown code blocks\n- Start with { and end with }\n",
+              "role": "assistant"
+            },
+            {
+              "content": "=Research Question: {{ $json.refined_question }}\nProgram Area: {{ $json.program_area }}\nRegion: {{ $json.region }}\nAudience: {{ $json.audience }}\nQuality Threshold: {{ $json.quality_threshold }}\nIteration: {{ $json.iteration_count }} of {{ $json.max_iterations }}\n\nWeb Evidence ({{ $json.web_search_content.length }} chars):\n{{ $json.web_search_content }}\n\nAcademic Evidence ({{ $json.academic_search_content.length }} chars):\n{{ $json.academic_search_content }}\n\nTotal Sources: {{ $json.total_sources_found }}\n\nRespond in this exact JSON:\n{\n  \"evidence_decision\": \"PROCEED or INSUFFICIENT\",\n  \"weakness_type\": \"INSUFFICIENT_VOLUME or LOW_QUALITY or CONFLICT or OUTDATED or null\",\n  \"weakness_reason\": \"one sentence — exactly what is missing or wrong\",\n  \"confidence_score\": 0-100,\n  \"evaluation_notes\": \"2-3 sentences on overall evidence quality\",\n  \"human_review_flag\": true or false,\n  \"human_review_reason\": \"null or reason if flag is true\"\n}\n\nSCORING GUIDE:\n- total_sources >= 6 AND both contents > 500 chars → lean PROCEED\n- Any content = 'No results found' → INSUFFICIENT_VOLUME\n- iteration_count >= max_iterations → force PROCEED + human_review_flag = true\n"
+            }
+          ]
+        },
+        "simplify": false,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.anthropic",
+      "typeVersion": 1,
+      "position": [
+        2016,
+        0
+      ],
+      "id": "4147b50f-b814-4a8d-b7bd-2530b941d38f",
+      "name": "Message a model",
+      "credentials": {
+        "anthropicApi": {
+          "id": "YOUR_N8N_ANTHROPIC_CRED_ID",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = items[0];\nconst rawText = raw.json.content[0].text;\n\nlet cleaned = rawText\n  .replace(/```json\\n?/gi, '')\n  .replace(/```\\n?/gi, '')\n  .trim();\n\nlet parsed;\ntry {\n  parsed = JSON.parse(cleaned);\n} catch (e) {\n  parsed = {\n    evidence_decision:   \"PROCEED\",\n    weakness_type:       null,\n    weakness_reason:     \"Parse error — forcing proceed\",\n    confidence_score:    50,\n    evaluation_notes:    \"Evaluator output could not be parsed\",\n    human_review_flag:   true,\n    human_review_reason: \"Parse error on evaluator output\"\n  };\n}\n\nconst planningData = $('Loop Counter + Idempotency').first().json;\nconst combineData  = $('Combine Search Output').first().json;\n\nconst iterationCount = planningData.iteration_count ?? 0;\nconst maxIterations  = planningData.max_iterations  ?? 2;\nconst forceProceed   = iterationCount >= maxIterations;\n\nreturn [{\n  json: {\n    ...planningData,\n    web_search_content:      combineData.web_search_content,\n    academic_search_content: combineData.academic_search_content,\n    all_citations:           combineData.all_citations,\n    structured_sources:      combineData.structured_sources,\n    total_sources_found:     combineData.total_sources_found,\n    evidence_decision:   forceProceed ? \"PROCEED\" : (parsed.evidence_decision  ?? \"PROCEED\"),\n    weakness_type:       forceProceed ? null       : (parsed.weakness_type     ?? null),\n    weakness_reason:     parsed.weakness_reason    ?? null,\n    confidence_score:    parsed.confidence_score   ?? 50,\n    evaluation_notes:    parsed.evaluation_notes   ?? \"\",\n    human_review_flag:   forceProceed ? true : (parsed.human_review_flag ?? false),\n    human_review_reason: forceProceed\n      ? \"Max iterations reached — proceeding with available evidence\"\n      : (parsed.human_review_reason ?? null)\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2368,
+        0
+      ],
+      "id": "bbfa1c25-8cae-4fc5-b67f-34357841c157",
+      "name": "Parse Evaluator"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "12d5fe3a-3399-40fa-8aed-0330e8a65bd9",
+              "leftValue": "={{ $json.evidence_decision }}",
+              "rightValue": "PROCEED",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2576,
+        0
+      ],
+      "id": "c0382f7f-49c7-4779-bdbc-6cdc0acf7150",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.weakness_type }}",
+                    "rightValue": "INSUFFICIENT_VOLUME",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "e30c96fa-80dc-47fc-a0d9-25272ca98ac7"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "a45802bf-9327-4e06-9f21-fc9f6470d126",
+                    "leftValue": "={{ $json.weakness_type }}",
+                    "rightValue": "LOW_QUALITY",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "34f08819-3112-4cb2-aefb-dccacd185f9d",
+                    "leftValue": "=\t{{ $json.weakness_type }}",
+                    "rightValue": "CONFLICT",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "89e348ac-fd70-4e0d-bfd6-5e58b0dcc062",
+                    "leftValue": "={{ $json.weakness_type }}",
+                    "rightValue": "\tOUTDATED",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        2784,
+        96
+      ],
+      "id": "8028a6fe-dcf3-4aff-9813-bcb3b94ea970",
+      "name": "Route by Weakness"
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $('Parse Evaluator').first().json;\nreturn [{\n  json: {\n    ...d,\n    request_body: JSON.stringify({\n      model: \"sonar-pro\",\n      messages: [\n        {\n          role: \"system\",\n          content: \"You are a global health research assistant. Cast a wider net — search for related interventions, comparable regions, and adjacent evidence that could inform the research question.\"\n        },\n        {\n          role: \"user\",\n          content: \"Broaden search for: \" + d.refined_question +\n            \". Include evidence from similar interventions, adjacent geographies, and related program areas in \" + d.region +\n            \". Gap identified: \" + d.weakness_reason\n        }\n      ],\n      max_tokens: 2000,\n      temperature: 0.3,\n      search_context_size: \"high\"\n    })\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2992,
+        -112
+      ],
+      "id": "d803a434-470d-4224-a37c-466241328658",
+      "name": "Refine - BROADEN"
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $('Parse Evaluator').first().json;\nreturn [{\n  json: {\n    ...d,\n    request_body: JSON.stringify({\n      model: \"sonar-pro\",\n      messages: [\n        {\n          role: \"system\",\n          content: \"You are a precision research specialist. Search only for highly specific, directly relevant peer-reviewed evidence. Reject tangential sources.\"\n        },\n        {\n          role: \"user\",\n          content: \"Constrained search — be highly specific: \" + d.refined_question +\n            \". Focus ONLY on \" + d.program_area + \" in \" + d.region +\n            \". Exclude general overviews. Gap: \" + d.weakness_reason\n        }\n      ],\n      max_tokens: 2000,\n      temperature: 0.1,\n      search_context_size: \"high\"\n    })\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2992,
+        48
+      ],
+      "id": "6e87d8d1-996a-4e02-8439-ba96d776ad87",
+      "name": "Refine - CONSTRAIN"
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $('Parse Evaluator').first().json;\nreturn [{\n  json: {\n    ...d,\n    request_body: JSON.stringify({\n      model: \"sonar-pro\",\n      messages: [\n        {\n          role: \"system\",\n          content: \"You are a research arbitrator. Find authoritative sources that resolve contradictions in the evidence. Prioritize systematic reviews, Cochrane reviews, and WHO guidance.\"\n        },\n        {\n          role: \"user\",\n          content: \"Resolve conflicting evidence on: \" + d.refined_question +\n            \". Find authoritative consensus sources for \" + d.program_area + \" in \" + d.region +\n            \". Conflict identified: \" + d.weakness_reason\n        }\n      ],\n      max_tokens: 2000,\n      temperature: 0.1,\n      search_context_size: \"high\"\n    })\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2992,
+        224
+      ],
+      "id": "c3103b4b-a5ee-4ef6-895a-a7753a3a8a1d",
+      "name": "Refine - ARBITRATE"
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $('Parse Evaluator').first().json;\nreturn [{\n  json: {\n    ...d,\n    request_body: JSON.stringify({\n      model: \"sonar-pro\",\n      messages: [\n        {\n          role: \"system\",\n          content: \"You are a current evidence specialist. Search only for publications from 2022-2026. Reject anything older unless it is a landmark study.\"\n        },\n        {\n          role: \"user\",\n          content: \"Find recent 2022-2026 evidence on: \" + d.refined_question +\n            \". Program: \" + d.program_area + \", Region: \" + d.region +\n            \". Gap: \" + d.weakness_reason\n        }\n      ],\n      max_tokens: 2000,\n      temperature: 0.2,\n      search_context_size: \"high\"\n    })\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3008,
+        400
+      ],
+      "id": "4498dc2c-6adb-43c5-8c60-0fd64fadb223",
+      "name": "Refine - NARROW TO RECENT"
+    },
+    {
+      "parameters": {
+        "numberInputs": 4
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        3456,
+        112
+      ],
+      "id": "36008e16-5df2-4a2a-8032-7013b529a992",
+      "name": "Merge Refined Search"
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $('Parse Evaluator').first().json;\nconst refinedRaw = items[0].json;\n\nconst refinedContent   = refinedRaw.choices?.[0]?.message?.content ?? \"No refined results\";\nconst refinedCitations = refinedRaw.citations ?? [];\n\nconst allCitations = [...new Set([\n  ...(d.all_citations ?? []),\n  ...refinedCitations\n])];\n\nreturn [{\n  json: {\n    ...d,\n    web_search_content:      d.web_search_content,\n    academic_search_content: d.academic_search_content + \"\\n\\nREFINED SEARCH:\\n\" + refinedContent,\n    all_citations:           allCitations,\n    structured_sources:      d.structured_sources ?? [],\n    total_sources_found:     allCitations.length,\n    iteration_count:         (d.iteration_count ?? 0) + 1\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3664,
+        144
+      ],
+      "id": "5c773161-c605-4659-9e8e-65d8df37d11e",
+      "name": "Combine Refined Results"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "claude-opus-4-5-20251101",
+          "mode": "list",
+          "cachedResultName": "claude-opus-4-5-20251101"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "You are a senior research analyst at [Your Organization], a global health and development nonprofit.\n\nYou write evidence briefs that are read by donors, program leads, and executives.\n\nYour writing is precise, credible, and calibrated to the audience.\nYou never fabricate citations. You only use what is provided.\nYou never use jargon unless the audience is technical.\nYou flag uncertainty honestly — never overstate confidence.\n\nAUDIENCE CALIBRATION:\n- Donor Brief: non-technical, impact-focused, 350-550 words in the brief body. Lead with outcomes and cost-effectiveness. Avoid acronyms.\n- Internal Team: technical depth is appropriate. Include methodology notes and evidence gaps. 600-900 words in the brief body.\n- Executive Summary: 180 words maximum in the brief body. Lead with one clear finding. End with one recommendation.\n\nYOUR MOST IMPORTANT INSTRUCTION:\nDo NOT use a fixed section template. Read the research question, the evidence,\nand the audience — then decide what sections this specific brief needs.\nA brief about conflicting evidence needs a \"Conflicting Findings\" section.\nA brief with strong implementation data needs an \"Implementation Evidence\" section.\nA brief for a donor does not need methodology. Let the content drive the structure.\n\nOUTPUT FORMAT — follow this exactly, no deviations:\nLine 1:   TITLE: [title of this brief]\nLine 2:   CONFIDENCE: [HIGH or MEDIUM or LOW]\nLine 3:   CONFIDENCE_REASON: [one sentence]\nLine 4:   KEY_TAKEAWAY: [single most important sentence for this audience]\nLine 5:   SLACK_BULLETS:\nLines 6-10: [5 bullet points, each starting with •, each under 15 words]\nLine 11:  ---\nEverything after line 11: the full evidence brief in clean prose.\n           Use markdown headings (## for sections, ### for subsections).\n           Write complete paragraphs. Cite sources inline as [1], [2] etc.\n           Do not repeat the title or metadata above the --- line.\n           End with a ## Sources section listing all citations used.",
+              "role": "assistant"
+            },
+            {
+              "content": "=Research Question: {{ $json.original_question }}\nRefined Question: {{ $json.refined_question }}\nProgram Area: {{ $json.program_area }}\nRegion: {{ $json.region }}\nAudience: {{ $json.audience }}\nUrgency: {{ $json.urgency }}\nEvidence Quality Score: {{ $json.confidence_score }}/100\nEvaluator Notes: {{ $json.evaluation_notes }}\nTotal Sources Available: {{ $json.total_sources_found }}\nIterations of Search Completed: {{ $json.iteration_count }}\n\nSub-questions the brief must address:\n{{ $json.sub_questions }}\n\n--- WEB SEARCH EVIDENCE ---\n{{ $json.web_search_content }}\n\n--- ACADEMIC / PEER-REVIEWED EVIDENCE ---\n{{ $json.academic_search_content }}\n\n--- SOURCE LIST ---\n{{ $json.structured_sources }}\n\n--- ALL CITATION URLS ---\n{{ $json.all_citations }}\n\nWrite the evidence brief now. Remember: structure it for THIS specific question\nand THIS specific audience. Do not use a fixed template."
+            }
+          ]
+        },
+        "simplify": false,
+        "options": {
+          "system": "",
+          "maxTokens": 3000,
+          "temperature": 0.3
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.anthropic",
+      "typeVersion": 1,
+      "position": [
+        3872,
+        144
+      ],
+      "id": "47e4ca8e-60f6-4931-ae07-7a7304aa7590",
+      "name": "Evidence Synthesizer",
+      "credentials": {
+        "anthropicApi": {
+          "id": "YOUR_N8N_ANTHROPIC_CRED_ID",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Pull the raw text output from Evidence Synthesizer\nconst synthOutput = $('Evidence Synthesizer').first().json;\n\nlet rawText = '';\nif (synthOutput?.content?.[0]?.text) {\n  rawText = synthOutput.content[0].text;\n} else if (synthOutput?.text) {\n  rawText = synthOutput.text;\n} else {\n  throw new Error('Evidence Synthesizer produced no output. Keys found: ' + JSON.stringify(Object.keys(synthOutput || {})));\n}\n\nrawText = rawText.trim();\n\n// ── PARSE THE METADATA HEADER ──────────────────────────────────────────────\n// Format is:\n//   TITLE: ...\n//   CONFIDENCE: HIGH/MEDIUM/LOW\n//   CONFIDENCE_REASON: ...\n//   KEY_TAKEAWAY: ...\n//   SLACK_BULLETS:\n//   • bullet 1\n//   • bullet 2\n//   • bullet 3\n//   • bullet 4\n//   • bullet 5\n//   ---\n//   [full report body]\n\nfunction extractLine(text, label) {\n  const regex = new RegExp('^' + label + ':(.+)$', 'mi');\n  const match = text.match(regex);\n  return match ? match[1].trim() : '';\n}\n\n// Extract the separator position\nconst separatorIndex = rawText.indexOf('\\n---');\nconst headerText = separatorIndex > -1 ? rawText.substring(0, separatorIndex) : rawText;\nconst briefBody  = separatorIndex > -1 ? rawText.substring(separatorIndex + 4).trim() : rawText;\n\nconst briefTitle       = extractLine(headerText, 'TITLE');\nconst confidenceLevel  = extractLine(headerText, 'CONFIDENCE');\nconst confidenceReason = extractLine(headerText, 'CONFIDENCE_REASON');\nconst keyTakeaway      = extractLine(headerText, 'KEY_TAKEAWAY');\n\n// Extract slack bullets — everything between SLACK_BULLETS: and ---\nconst bulletMatch = headerText.match(/SLACK_BULLETS:\\s*\\n([\\s\\S]*?)(?:\\n---|$)/i);\nconst slackBullets = bulletMatch ? bulletMatch[1].trim() : '';\n\n// Fallbacks if parsing failed\nconst title    = briefTitle    || 'PATH Research Brief';\nconst confLvl  = confidenceLevel.toUpperCase().includes('HIGH')   ? 'HIGH'\n               : confidenceLevel.toUpperCase().includes('MEDIUM') ? 'MEDIUM'\n               : confidenceLevel.toUpperCase().includes('LOW')    ? 'LOW'\n               : 'MEDIUM';\n\n// Get planning data for all other fields\nconst planningData = $('Parse Evaluator').first().json;\n\nreturn [{\n  json: {\n    ...planningData,\n    // Brief content\n    brief_title:       title,\n    confidence_level:  confLvl,\n    confidence_reason: confidenceReason || planningData.evaluation_notes || '',\n    brief_body:        briefBody || rawText,\n    key_takeaway:      keyTakeaway || '',\n    slack_bullets:     slackBullets || '',\n    // Pass raw text for doc writing\n    full_report_text:  rawText\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4224,
+        144
+      ],
+      "id": "6e0b15b8-2d2d-4c84-8aac-85e225add1d3",
+      "name": "Parse Synthesizer"
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = items[0].json;\n\n// Build source type distribution\nconst sourceTypes = {};\n(d.structured_sources ?? []).forEach(s => {\n  const t = s.source_type ?? \"Unknown\";\n  sourceTypes[t] = (sourceTypes[t] ?? 0) + 1;\n});\n\nconst labels = Object.keys(sourceTypes);\nconst values = Object.values(sourceTypes);\n\nconst chartConfig = {\n  type: \"doughnut\",\n  data: {\n    labels: labels,\n    datasets: [{\n      data: values,\n      backgroundColor: [\n        \"#2563EB\", \"#16A34A\", \"#D97706\", \"#DC2626\", \"#7C3AED\", \"#0891B2\"\n      ]\n    }]\n  },\n  options: {\n    plugins: {\n      title: {\n        display: true,\n        text: \"Evidence Sources: \" + d.program_area + \" — \" + d.region\n      },\n      legend: { position: \"bottom\" }\n    }\n  }\n};\n\nconst encoded = encodeURIComponent(JSON.stringify(chartConfig));\nconst chartUrl = \"https://quickchart.io/chart?c=\" + encoded + \"&width=500&height=300\";\n\nreturn [{\n  json: {\n    ...d,\n    chart_url: chartUrl\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4432,
+        144
+      ],
+      "id": "f3bc1d81-d783-4367-b446-320bcbf964a1",
+      "name": "QuickChart PNG Builder"
+    },
+    {
+      "parameters": {
+        "folderId": "1aBL0djdKWRIoTQtxdFgwm7TX2R4hKMWx",
+        "title": "={{ \"PATH Brief — \" + $json.brief_title + \" — \" + $now.format('yyyy-MM-dd') }}\n"
+      },
+      "type": "n8n-nodes-base.googleDocs",
+      "typeVersion": 2,
+      "position": [
+        4896,
+        144
+      ],
+      "id": "568a8cd3-b5bf-4c66-a80f-eb31c8d75ae6",
+      "name": "Create Google Doc",
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "XSXkbYquUPteerFA",
+          "name": "Google Docs account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = items[0].json;\nconst today = new Date().toISOString().split('T')[0];\n\n// Build the document — the brief_body is already well-structured markdown\n// We add a clean header block above it\nconst header = \n`PATH RESEARCH BRIEF\nGenerated by the Evidence Intelligence Engine\n════════════════════════════════════════════════════\n\nDate:          ${today}\nProgram Area:  ${d.program_area}\nRegion:        ${d.region}\nAudience:      ${d.audience}\nUrgency:       ${d.urgency}\nConfidence:    ${d.confidence_level} — ${d.confidence_reason}\nSources Found: ${d.total_sources_found}\nSearch Rounds: ${d.iteration_count}\nHuman Review:  ${d.human_review_flag ? '⚠ REQUIRED — ' + (d.human_review_reason || '') : '✓ Not required'}\n\nOriginal Question:\n${d.original_question}\n\nRefined Question:\n${d.refined_question}\n\n════════════════════════════════════════════════════\n\n`;\n\n// The brief body from Claude is clean markdown prose\n// Google Docs will render the plain text — headings won't render as headings\n// but the structure will be clear and readable\nconst docContent = header + d.brief_body;\n\nreturn [{\n  json: {\n    ...d,\n    doc_content: docContent\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4640,
+        144
+      ],
+      "id": "263cf599-8ebb-4a5c-af3d-43dd48825f61",
+      "name": "Prepare Doc Content"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentURL": "={{ $json.doc_id }}",
+        "actionsUi": {
+          "actionFields": [
+            {
+              "action": "insert",
+              "text": "={{ $json.doc_content }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.googleDocs",
+      "typeVersion": 2,
+      "position": [
+        5328,
+        64
+      ],
+      "id": "d2c22944-5142-4a3a-b2b0-b9042026d307",
+      "name": "Write to Google Doc",
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "XSXkbYquUPteerFA",
+          "name": "Google Docs account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const docData   = items[0].json;\nconst briefData = $('Prepare Doc Content').first().json;\n\nconst docId = docData.id ?? docData.documentId ?? \"\";\n\nreturn [{\n  json: {\n    ...briefData,\n    doc_id:  docId,\n    doc_url: \"https://docs.google.com/document/d/\" + docId + \"/edit\"\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5104,
+        144
+      ],
+      "id": "3f722bca-973d-4cc7-aa02-093f4ac7ee00",
+      "name": "Attach Content to Doc ID"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1i6uJZ2BO5GdlviyJ6NpuBDzKlfGFQKaTFaFS9yVlrvM",
+          "mode": "list",
+          "cachedResultName": "Log to Research Sheet",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1i6uJZ2BO5GdlviyJ6NpuBDzKlfGFQKaTFaFS9yVlrvM/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1i6uJZ2BO5GdlviyJ6NpuBDzKlfGFQKaTFaFS9yVlrvM/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Date": "={{ $now.format('yyyy-MM-dd') }}",
+            "Trigger ID": "={{ $json.trigger_id }}",
+            "Question": "={{ $json.original_question }}",
+            "Program Area": "={{ $json.program_area }}",
+            "Region": "={{ $json.region }}",
+            "Audience": "={{ $json.audience }}",
+            "Confidence Level": "={{ $json.confidence_level }}",
+            "Confidence Score": "={{ $json.confidence_score }}",
+            "Key Takeaway": "={{ $json.key_takeaway }}",
+            "Sources Found": "={{ $json.total_sources_found }}",
+            "Iterations Used": "={{ $json.iteration_count }}",
+            "Gap Type": "=={{ $json.weakness_type ?? 'None' }}",
+            "Human Review Flag": "={{ $json.human_review_flag }}",
+            "Human Review Reason": "={{ $json.human_review_reason ?? '' }}",
+            "Doc URL": "={{ $json.doc_url }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Trigger ID",
+              "displayName": "Trigger ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Question",
+              "displayName": "Question",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Program Area",
+              "displayName": "Program Area",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Region",
+              "displayName": "Region",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Audience",
+              "displayName": "Audience",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Confidence Level",
+              "displayName": "Confidence Level",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Confidence Score",
+              "displayName": "Confidence Score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Key Takeaway",
+              "displayName": "Key Takeaway",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Sources Found",
+              "displayName": "Sources Found",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Iterations Used",
+              "displayName": "Iterations Used",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Gap Type",
+              "displayName": "Gap Type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Human Review Flag",
+              "displayName": "Human Review Flag",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Human Review Reason",
+              "displayName": "Human Review Reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Doc URL",
+              "displayName": "Doc URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        5360,
+        496
+      ],
+      "id": "99e6cdf0-21a5-4eac-a2a2-c5e601ce43c8",
+      "name": "Log to Research Sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_N8N_GSHEETS_CRED_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "#research-briefs",
+          "mode": "name"
+        },
+        "text": "=🔬 *Research Brief Ready*\n\n*{{ $json.brief_title }}*\nConfidence: {{ $json.confidence_level }} — {{ $json.confidence_reason }}\n\n{{ $json.slack_bullets }}\n\n📊 Sources: {{ $json.total_sources_found }} | Rounds: {{ $json.iteration_count }} | Program: {{ $json.program_area }} | Region: {{ $json.region }}\n🔁 Review needed: {{ $json.human_review_flag ? '⚠️ YES — ' + $json.human_review_reason : '✅ No' }}\n📄 Full brief: {{ $json.doc_url }}",
+        "otherOptions": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.4,
+      "position": [
+        5328,
+        -144
+      ],
+      "id": "5b9fa263-2723-49e6-8e28-33d433c52761",
+      "name": "Send a message",
+      "webhookId": "843e9c08-168f-46ed-b620-fc57068b88e4",
+      "credentials": {
+        "slackApi": {
+          "id": "YOUR_N8N_SLACK_CRED_ID",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst body = input.body || input;\n\nreturn [{\n  json: {\n    \"Input Mode\": body[\"Input Mode\"] || body.input_mode || \"Research Question\",\n    \"Research Question\": body[\"Research Question\"] || body.research_question || \"\",\n    \"Meeting Transcript\": body[\"Meeting Transcript\"] || body.meeting_transcript || \"\",\n    \"Program Area\": body[\"Program Area\"] || body.program_area || \"Unknown\",\n    \"Geographic Region\": body[\"Geographic Region\"] || body.geographic_region || body.region || \"\",\n    \"Audience Type\": body[\"Audience Type\"] || body.audience_type || body.audience || \"Donor Brief\",\n    \"Urgency\": body[\"Urgency\"] || body.urgency || \"Standard\"\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "ea4f99b6-f602-410a-9ab3-9675d57239fb",
+      "name": "Normalize Research Input"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "research-demo",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -256,
+        112
+      ],
+      "id": "ebd50f0b-2844-4687-a281-9773367ecd28",
+      "name": "Webhook",
+      "webhookId": "84a6f968-b282-44ba-9394-d80d3a9054a4"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_MEETING_ATTENDEES_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Meeting Attendees",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_MEETING_ATTENDEES_SHEET_ID/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_MEETING_ATTENDEES_SHEET_ID/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        5344,
+        272
+      ],
+      "id": "1b3091be-b4d4-4030-a697-4e72cf48f23f",
+      "name": "Get Attendees (Research)",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_N8N_GSHEETS_CRED_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get all emails from the sheet\nconst attendees = $input.all();\nconst emails = attendees\n  .map(item => item.json.Email)\n  .filter(email => email && email.includes('@'))\n  .join(', ');\n\n// Carry forward ALL research data\nconst researchData = $('Attach Content to Doc ID').item.json;\n\nreturn [{\n  json: {\n    ...researchData,\n    attendee_emails: emails\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5632,
+        272
+      ],
+      "id": "67d9d667-987e-41e7-91ec-6581776b8b86",
+      "name": "Build Email List (Research)"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.attendee_emails }}",
+        "subject": "={{ '[PATH Research Brief] ' + $json.brief_title }}",
+        "message": "=={{ '<div style=\"font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto; color: #1a1a2e;\">' +'<div style=\"background: #1a1a2e; padding: 28px 32px; border-radius: 8px 8px 0 0;\">' +'<p style=\"color: #4fc3f7; font-size: 11px; letter-spacing: 2px; margin: 0 0 8px 0; text-transform: uppercase;\">Evidence Intelligence Engine</p>' +'<h1 style=\"color: #ffffff; font-size: 22px; margin: 0; font-weight: 700;\">' + $json.brief_title + '</h1>' +'</div>' +'<div style=\"background: #f8f9ff; padding: 24px 32px; border-left: 4px solid #4fc3f7;\">' +'<table style=\"width: 100%; font-size: 13px; color: #444;\">' +'<tr><td style=\"padding: 4px 0; width: 140px; color: #888;\">Program Area</td><td style=\"padding: 4px 0; font-weight: 600;\">' + $json.program_area + '</td></tr>' +'<tr><td style=\"padding: 4px 0; color: #888;\">Region</td><td style=\"padding: 4px 0; font-weight: 600;\">' + $json.region + '</td></tr>' +'<tr><td style=\"padding: 4px 0; color: #888;\">Audience</td><td style=\"padding: 4px 0; font-weight: 600;\">' + $json.audience + '</td></tr>' +'<tr><td style=\"padding: 4px 0; color: #888;\">Confidence</td><td style=\"padding: 4px 0; font-weight: 600;\">' + $json.confidence_level + '</td></tr>' +'<tr><td style=\"padding: 4px 0; color: #888;\">Sources Used</td><td style=\"padding: 4px 0; font-weight: 600;\">' + $json.total_sources_found + '</td></tr>' +'</table>' +'</div>' +'<div style=\"background: #ffffff; padding: 24px 32px; border: 1px solid #e8eaf6;\">' +'<p style=\"font-size: 12px; font-weight: 700; letter-spacing: 1px; color: #4fc3f7; text-transform: uppercase; margin: 0 0 12px 0;\">Key Finding</p>' +'<p style=\"font-size: 15px; color: #1a1a2e; line-height: 1.6; margin: 0; padding: 16px; background: #f0f4ff; border-radius: 6px; font-style: italic;\">' + $json.key_takeaway + '</p>' +'</div>' +'<div style=\"background: #ffffff; padding: 8px 32px 24px 32px; border: 1px solid #e8eaf6; border-top: none;\">' +'<p style=\"font-size: 12px; font-weight: 700; letter-spacing: 1px; color: #4fc3f7; text-transform: uppercase; margin: 0 0 12px 0;\">Summary Findings</p>' +'<div style=\"font-size: 14px; color: #333; line-height: 1.8; white-space: pre-line;\">' + $json.slack_bullets + '</div>' +'</div>' +'<div style=\"background: #1a1a2e; padding: 20px 32px; border-radius: 0 0 8px 8px; text-align: center;\">' +'<a href=\"' + $json.doc_url + '\" style=\"display: inline-block; background: #4fc3f7; color: #1a1a2e; font-weight: 700; padding: 12px 32px; border-radius: 6px; text-decoration: none; font-size: 14px; letter-spacing: 0.5px;\">Read Full Brief in Google Docs</a>' +'<p style=\"color: #666; font-size: 11px; margin: 16px 0 0 0;\">Generated automatically · PATH AI Workshop · Human review: ' + ($json.human_review_flag ? '⚠ Required' : '✓ Not required') + '</p>' +'</div>' +'</div>'}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        5840,
+        272
+      ],
+      "id": "f9fba230-6c6f-4d27-a835-51c9a0443b86",
+      "name": "Send a message1",
+      "webhookId": "0e99886a-f103-4b61-9220-02a455d32a9b",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YOUR_N8N_GMAIL_CRED_ID",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Evidence Intelligence Engine": {
+      "main": [
+        [
+          {
+            "node": "Normalize Research Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Research Planner": {
+      "main": [
+        [
+          {
+            "node": "Parse Planner",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Planner": {
+      "main": [
+        [
+          {
+            "node": "Loop Counter + Idempotency",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Counter + Idempotency": {
+      "main": [
+        [
+          {
+            "node": "Web Search - Perplexity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Web Search - Perplexity": {
+      "main": [
+        [
+          {
+            "node": "Call Perplexity Web",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Academic Search - Perplexity": {
+      "main": [
+        [
+          {
+            "node": "Call Perplexity Academic",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Perplexity Web": {
+      "main": [
+        [
+          {
+            "node": "Academic Search - Perplexity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Perplexity Academic": {
+      "main": [
+        [
+          {
+            "node": "Combine Search Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combine Search Output": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Parse Evaluator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Evaluator": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Evidence Synthesizer",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Route by Weakness",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Weakness": {
+      "main": [
+        [
+          {
+            "node": "Refine - BROADEN",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Refine - CONSTRAIN",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Refine - ARBITRATE",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Refine - NARROW TO RECENT",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Refine - ARBITRATE": {
+      "main": [
+        [
+          {
+            "node": "Merge Refined Search",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Refine - BROADEN": {
+      "main": [
+        [
+          {
+            "node": "Merge Refined Search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Refine - CONSTRAIN": {
+      "main": [
+        [
+          {
+            "node": "Merge Refined Search",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Refine - NARROW TO RECENT": {
+      "main": [
+        [
+          {
+            "node": "Merge Refined Search",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Merge Refined Search": {
+      "main": [
+        [
+          {
+            "node": "Combine Refined Results",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Parse Synthesizer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combine Refined Results": {
+      "main": [
+        [
+          {
+            "node": "Evidence Synthesizer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Evidence Synthesizer": {
+      "main": [
+        [
+          {
+            "node": "Parse Synthesizer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Synthesizer": {
+      "main": [
+        [
+          {
+            "node": "QuickChart PNG Builder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "QuickChart PNG Builder": {
+      "main": [
+        [
+          {
+            "node": "Prepare Doc Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Google Doc": {
+      "main": [
+        [
+          {
+            "node": "Attach Content to Doc ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Doc Content": {
+      "main": [
+        [
+          {
+            "node": "Create Google Doc",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Attach Content to Doc ID": {
+      "main": [
+        [
+          {
+            "node": "Log to Research Sheet",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Write to Google Doc",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Attendees (Research)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write to Google Doc": {
+      "main": [
+        []
+      ]
+    },
+    "Send a message": {
+      "main": [
+        []
+      ]
+    },
+    "Normalize Research Input": {
+      "main": [
+        [
+          {
+            "node": "Research Planner",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Normalize Research Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Attendees (Research)": {
+      "main": [
+        [
+          {
+            "node": "Build Email List (Research)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Email List (Research)": {
+      "main": [
+        [
+          {
+            "node": "Send a message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "8fa708ec-4289-4292-9fed-75367bd206c5",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "YOUR_N8N_INSTANCE_ID"
+  },
+  "id": "qdGoH6EXyteMe4j3",
+  "tags": []
+}

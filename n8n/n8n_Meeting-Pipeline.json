@@ -1,0 +1,436 @@
+{
+  "name": "Meeting Pipeline",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Meeting Pipeline",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Meeting Name",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Meeting Transcript",
+              "fieldType": "textarea",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.5,
+      "position": [
+        -512,
+        -80
+      ],
+      "id": "8556dda1-ada2-43e9-8743-23ee58779fe7",
+      "name": "On form submission",
+      "webhookId": "59c31f6c-0cae-4dbc-9a56-e85991136bec"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "claude-3-haiku-20240307",
+          "mode": "list",
+          "cachedResultName": "Claude Haiku 3"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        96
+      ],
+      "id": "6b0ab308-92d9-4cb9-bf6f-7d558d3d7be2",
+      "name": "Anthropic Chat Model",
+      "credentials": {
+        "anthropicApi": {
+          "id": "YOUR_N8N_ANTHROPIC_CRED_ID",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a meeting analyst.\n\nAnalyze this meeting transcript carefully.\n\nMeeting Name: {{ $json[\"Meeting Name\"] }}\nTranscript: {{ $json[\"Meeting Transcript\"] }}\n\nRespond ONLY in valid JSON, no other text:\n{\n  \"meeting_name\": \"the meeting name\",\n  \"date_processed\": \"today\",\n  \"total_action_items\": 0,\n  \"action_items\": [\n    {\n      \"action\": \"what needs to be done\",\n      \"owner\": \"person responsible or UNCLEAR\",\n      \"deadline\": \"deadline or NOT SPECIFIED\",\n      \"priority\": \"HIGH or MEDIUM or LOW\"\n    }\n  ],\n  \"decisions_made\": [\"decision 1\"],\n  \"unclear_ownership\": [\"action items where nobody was assigned\"],\n  \"biggest_risk\": \"the one thing most likely to fall through\",\n  \"follow_up_email_subject\": \"subject line\",\n  \"follow_up_email_body\": \"complete ready to send email text. Always end the email with this exact signature:\\n\\nBest regards,\\n[YOUR NAME]\\nDigital Health | AI | MedTech\",\n  \"slack_summary\": \"3 bullet points each under 15 words\"\n}\n",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        0,
+        -96
+      ],
+      "id": "3197fc31-2c97-4295-8f1d-f7958d5964ba",
+      "name": "Claude Analysis"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get raw Claude output\nconst rawText = $input.first().json.text;\n\n// Step 1: Extract ONLY the JSON object using regex (ignore everything else)\nconst jsonMatch = rawText.match(/\\{[\\s\\S]*\\}/);\nif (!jsonMatch) {\n  throw new Error('No JSON object found in Claude response');\n}\n\nlet jsonString = jsonMatch[0];\n\n// Step 2: Replace literal newlines INSIDE string values only\n// This replaces actual line breaks with \\n escape\njsonString = jsonString\n  .replace(/(\"(?:[^\"\\\\]|\\\\.)*\")/g, (match) => {\n    return match\n      .replace(/\\n/g, '\\\\n')\n      .replace(/\\r/g, '\\\\r')\n      .replace(/\\t/g, '\\\\t');\n  });\n\n// Step 3: Parse\nconst parsed = JSON.parse(jsonString);\n\nreturn [{ json: parsed }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        352,
+        -96
+      ],
+      "id": "9ca8a28d-f2fb-41f1-8c8a-802711d4ea44",
+      "name": "Parse JSON"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_MEETING_ACTIONS_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Meeting Actions Log",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_MEETING_ACTIONS_SHEET_ID/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_MEETING_ACTIONS_SHEET_ID/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Date": "={{ $now }}",
+            "Meeting": "={{ $json.meeting_name }}",
+            "Total Actions": "={{ $json.total_action_items }}",
+            "Biggest Risk": "={{ $json.biggest_risk }}",
+            "Unclear Owners": "={{ $json.unclear_ownership.length }}"
+          },
+          "matchingColumns": [
+            "Date"
+          ],
+          "schema": [
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Meeting",
+              "displayName": "Meeting",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Total Actions",
+              "displayName": "Total Actions",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Biggest Risk",
+              "displayName": "Biggest Risk",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Unclear Owners",
+              "displayName": "Unclear Owners",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        976,
+        -96
+      ],
+      "id": "21f6b021-9dfb-4b3e-b12c-a27a38b1ba35",
+      "name": "Append or update row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_N8N_GSHEETS_CRED_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Build Email List').item.json.recipient_emails }}\n",
+        "subject": "={{ $('Parse JSON').item.json.follow_up_email_subject }}\n",
+        "emailType": "text",
+        "message": "={{ $('Parse JSON').item.json.follow_up_email_body }}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1184,
+        -96
+      ],
+      "id": "426b1164-6b03-47fd-9589-c2997e29bb42",
+      "name": "Send a message",
+      "webhookId": "c549775a-f10f-4483-94a0-e1754a0f05e6",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YOUR_N8N_GMAIL_CRED_ID",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "meeting-actions",
+          "mode": "name"
+        },
+        "text": "=📋 Meeting: {{ $('Parse JSON').item.json.meeting_name }}\n\n{{ $('Parse JSON').item.json.slack_summary }}\n\n⚠️ Unclear ownership: {{ $('Parse JSON').item.json.unclear_ownership.length }} items\n🚨 Biggest risk: {{ $('Parse JSON').item.json.biggest_risk }}\n\nFollow-up email sent to Gmail.",
+        "otherOptions": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.4,
+      "position": [
+        1392,
+        -96
+      ],
+      "id": "88a45089-3685-474d-9b3e-82a114c8599f",
+      "name": "Send a message1",
+      "webhookId": "d1727e30-9293-4f09-8eca-1791b62adda8",
+      "credentials": {
+        "slackApi": {
+          "id": "YOUR_N8N_SLACK_CRED_ID",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "meeting-demo",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -512,
+        96
+      ],
+      "id": "9c51b6f1-6dde-4095-85b4-a41ff7b5b483",
+      "name": "Webhook",
+      "webhookId": "033a4231-b8ec-459f-9101-d7e7d6eca3d8"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\n\n// Handle both Form Trigger and Webhook inputs\nconst body = input.body || input;\n\nreturn [{\n  json: {\n    \"Meeting Name\": body[\"Meeting Name\"] || body.meeting_name || \"Team Meeting\",\n    \"Meeting Transcript\": body[\"Meeting Transcript\"] || body.meeting_transcript || \"\"\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -224,
+        -80
+      ],
+      "id": "7aa7ec0a-f006-46c8-8b7c-45aaa7cc3933",
+      "name": "Normalize Input"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_MEETING_ATTENDEES_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Meeting Attendees",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_MEETING_ATTENDEES_SHEET_ID/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_MEETING_ATTENDEES_SHEET_ID/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        560,
+        -96
+      ],
+      "id": "922e767c-75e1-4913-8264-d520e778bc42",
+      "name": "Get Attendees",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_N8N_GSHEETS_CRED_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get all emails from the sheet\nconst attendees = $input.all();\nconst emails = attendees\n  .map(item => item.json.Email)\n  .filter(email => email && email.includes('@'))\n  .join(', ');\n\n// Also carry forward the parsed meeting data\nconst meetingData = $('Parse JSON').item.json;\n\nreturn [{\n  json: {\n    ...meetingData,\n    recipient_emails: emails\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        768,
+        -96
+      ],
+      "id": "47edc58d-9380-4df9-8328-1edb891eeb0b",
+      "name": "Build Email List"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Normalize Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Anthropic Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Claude Analysis",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude Analysis": {
+      "main": [
+        [
+          {
+            "node": "Parse JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse JSON": {
+      "main": [
+        [
+          {
+            "node": "Get Attendees",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append or update row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        [
+          {
+            "node": "Send a message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Normalize Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Input": {
+      "main": [
+        [
+          {
+            "node": "Claude Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Attendees": {
+      "main": [
+        [
+          {
+            "node": "Build Email List",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Email List": {
+      "main": [
+        [
+          {
+            "node": "Append or update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "7637c399-b88c-4023-9357-5ac7c43e2246",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "YOUR_N8N_INSTANCE_ID"
+  },
+  "id": "5Jp8p0j0OiuL2X2F",
+  "tags": []
+}

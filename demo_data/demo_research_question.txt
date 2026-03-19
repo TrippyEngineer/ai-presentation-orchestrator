@@ -1,0 +1,6 @@
+# Sample research question for the Research Engine demo.
+# Replace with a question relevant to your own domain.
+
+What is the evidence on zinc supplementation effectiveness
+for reducing childhood diarrhea mortality in Sub-Saharan Africa
+and what are the barriers to national scale-up?

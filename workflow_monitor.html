@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Workflow Monitor</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      min-height: 100vh;
+      padding: 32px 24px;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 8px;
+      color: #f8fafc;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #94a3b8;
+      font-size: 0.9rem;
+      margin-bottom: 36px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+      max-width: 1200px;
+      margin: 0 auto 40px;
+    }
+
+    .pipeline {
+      background: #1e2130;
+      border: 1px solid #2d3348;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .pipeline-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid #2d3348;
+    }
+
+    .pipeline-header h2 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+
+    .pipeline-header p {
+      font-size: 0.78rem;
+      color: #94a3b8;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 99px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      float: right;
+      margin-top: 2px;
+    }
+
+    .status-standby  { background: #1e3a5f; color: #60a5fa; }
+    .status-running  { background: #1a3a2a; color: #34d399; animation: pulse 1.5s infinite; }
+    .status-done     { background: #1a2e1a; color: #86efac; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.5; }
+    }
+
+    .steps { padding: 12px 0; }
+
+    .step {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 10px 20px;
+      transition: background 0.2s;
+    }
+
+    .step.active   { background: #252b3b; }
+    .step.complete { background: #1a2e1a; }
+
+    .step-num {
+      flex-shrink: 0;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 1.5px solid #3d4561;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: #64748b;
+    }
+
+    .step.active   .step-num { border-color: #60a5fa; color: #60a5fa; }
+    .step.complete .step-num { border-color: #34d399; color: #34d399; }
+
+    .step-body { flex: 1; }
+
+    .step-title {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: #cbd5e1;
+      margin-bottom: 2px;
+    }
+
+    .step.active   .step-title { color: #f1f5f9; }
+    .step.complete .step-title { color: #86efac; }
+
+    .step-detail {
+      font-size: 0.76rem;
+      color: #64748b;
+      line-height: 1.4;
+    }
+
+    .step-output {
+      font-size: 0.73rem;
+      color: #38bdf8;
+      margin-top: 3px;
+      display: none;
+    }
+
+    .step.active   .step-output,
+    .step.complete .step-output { display: block; }
+
+    /* Stats bar */
+    .stats {
+      display: flex;
+      gap: 0;
+      border-top: 1px solid #2d3348;
+    }
+
+    .stat {
+      flex: 1;
+      text-align: center;
+      padding: 12px 8px;
+      border-right: 1px solid #2d3348;
+    }
+
+    .stat:last-child { border-right: none; }
+
+    .stat-value {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #f1f5f9;
+      display: block;
+    }
+
+    .stat-label {
+      font-size: 0.68rem;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    /* Demo counter */
+    .demo-counter {
+      max-width: 1200px;
+      margin: 0 auto 24px;
+      background: #1e2130;
+      border: 1px solid #2d3348;
+      border-radius: 12px;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .demo-counter h3 { font-size: 0.95rem; font-weight: 600; }
+    .demo-counter span { font-size: 1.8rem; font-weight: 800; color: #60a5fa; }
+
+    /* Controls */
+    .controls {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    button {
+      padding: 10px 24px;
+      border-radius: 8px;
+      border: none;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+
+    button:hover { opacity: 0.85; }
+
+    .btn-email    { background: #2563eb; color: #fff; }
+    .btn-meeting  { background: #7c3aed; color: #fff; }
+    .btn-research { background: #0891b2; color: #fff; }
+    .btn-reset    { background: #374151; color: #d1d5db; }
+
+    /* Sample data notice */
+    .notice {
+      max-width: 1200px;
+      margin: 0 auto 24px;
+      background: #1a2e1a;
+      border: 1px solid #166534;
+      border-radius: 8px;
+      padding: 10px 16px;
+      font-size: 0.78rem;
+      color: #86efac;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>AI Workflow Monitor</h1>
+  <p class="subtitle">Live demo status — 3 n8n automation pipelines</p>
+
+  <div class="notice">
+    ℹ️ All data shown is <strong>sample/illustrative content</strong>.
+    Replace with your own domain context before presenting.
+  </div>
+
+  <div class="demo-counter">
+    <h3>Demos Run</h3>
+    <span id="demoCount">0 / 3</span>
+    <div>
+      <div style="font-size:0.8rem;color:#94a3b8;">Pipeline Status</div>
+      <div style="font-size:0.8rem;color:#e2e8f0;margin-top:4px;">
+        AI Model &nbsp;·&nbsp; <span style="color:#60a5fa;">Claude</span>
+        &nbsp;&nbsp;|&nbsp;&nbsp;
+        Automation &nbsp;·&nbsp; <span style="color:#60a5fa;">n8n</span>
+        &nbsp;&nbsp;|&nbsp;&nbsp;
+        Human Input &nbsp;·&nbsp; <span style="color:#34d399;">0 actions</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid">
+
+    <!-- EMAIL PIPELINE -->
+    <div class="pipeline" id="pipeline-email">
+      <div class="pipeline-header">
+        <span class="status-badge status-standby" id="badge-email">Standby</span>
+        <h2>Email Pipeline</h2>
+        <p>Donor communication → structured response</p>
+      </div>
+      <div class="steps">
+        <div class="step" id="email-1">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <div class="step-title">Email received</div>
+            <div class="step-detail">Sample Sender · Sample Foundation<br>"Q1 Programme Update Request"</div>
+            <div class="step-output">"Q1 Programme Update Request"</div>
+          </div>
+        </div>
+        <div class="step" id="email-2">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <div class="step-title">Intent classification</div>
+            <div class="step-detail">Type: Donor Brief · Priority: High</div>
+            <div class="step-output">Area: [Programme Area] · Region: [Region]</div>
+          </div>
+        </div>
+        <div class="step" id="email-3">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <div class="step-title">Claude drafts response</div>
+            <div class="step-detail">Coverage rates, key achievements,<br>implementation challenges pulled</div>
+            <div class="step-output">implementation challenges pulled</div>
+          </div>
+        </div>
+        <div class="step" id="email-4">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <div class="step-title">Gmail draft created</div>
+            <div class="step-detail">Subject: RE: Q1 Programme Update<br>Saved in your Drafts folder</div>
+            <div class="step-output">Saved in your Drafts folder</div>
+          </div>
+        </div>
+        <div class="step" id="email-5">
+          <div class="step-num">5</div>
+          <div class="step-body">
+            <div class="step-title">Logged to Google Sheet</div>
+            <div class="step-detail">Row added · Timestamp · Priority tag</div>
+            <div class="step-output">Logged ✓</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MEETING PIPELINE -->
+    <div class="pipeline" id="pipeline-meeting">
+      <div class="pipeline-header">
+        <span class="status-badge status-standby" id="badge-meeting">Standby</span>
+        <h2>Meeting Pipeline</h2>
+        <p>1 transcript → 4 structured outputs</p>
+      </div>
+      <div class="steps">
+        <div class="step" id="meeting-1">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <div class="step-title">Transcript received</div>
+            <div class="step-detail">Country Team Meeting (Sample)<br>~47-minute session · 6 attendees</div>
+            <div class="step-output">47-minute session · 6 attendees</div>
+          </div>
+        </div>
+        <div class="step" id="meeting-2">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <div class="step-title">Executive summary generated</div>
+            <div class="step-detail">Key decisions · Risk flags<br>Strategic priorities extracted</div>
+            <div class="step-output">3 key decisions · 5 risk flags</div>
+          </div>
+        </div>
+        <div class="step" id="meeting-3">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <div class="step-title">Action items extracted</div>
+            <div class="step-detail">Items with owners + deadlines<br>Assigned by speaker attribution</div>
+            <div class="step-output">8 items with owners + deadlines</div>
+          </div>
+        </div>
+        <div class="step" id="meeting-4">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <div class="step-title">4 outputs delivered</div>
+            <div class="step-detail">Summary · Actions · Slack post<br>Google Sheet row logged</div>
+            <div class="step-output">Google Sheet row logged ✓</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RESEARCH ENGINE -->
+    <div class="pipeline" id="pipeline-research">
+      <div class="pipeline-header">
+        <span class="status-badge status-standby" id="badge-research">Standby</span>
+        <h2>Research Engine</h2>
+        <p>Agentic AI — plans its own search strategy</p>
+      </div>
+      <div class="steps">
+        <div class="step" id="research-1">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <div class="step-title">Research question received</div>
+            <div class="step-detail">Sample question · [Domain]<br>[Region] · Donor Brief</div>
+            <div class="step-output">[Region] · Donor Brief</div>
+          </div>
+        </div>
+        <div class="step" id="research-2">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <div class="step-title">AI plans search strategy</div>
+            <div class="step-detail">Decomposed into sub-queries<br>Sources prioritised: Lancet, WHO, Cochrane</div>
+            <div class="step-output">Decomposed into 4 sub-queries</div>
+          </div>
+        </div>
+        <div class="step" id="research-3">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <div class="step-title">Evidence gathered + evaluated</div>
+            <div class="step-detail">Sources retrieved · Quality scored<br>Gaps identified</div>
+            <div class="step-output">12 sources retrieved · Quality scored</div>
+          </div>
+        </div>
+        <div class="step" id="research-4">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <div class="step-title">Refinement strategy selected</div>
+            <div class="step-detail">AI evaluates quality → chooses approach</div>
+            <div class="step-output">Broadening search strategy</div>
+          </div>
+        </div>
+        <div class="step" id="research-5">
+          <div class="step-num">5</div>
+          <div class="step-body">
+            <div class="step-title">Donor brief synthesised</div>
+            <div class="step-detail">Evidence summary · Gap analysis<br>Scale-up barriers · Recommendations</div>
+            <div class="step-output">Brief ready ✓</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /.grid -->
+
+  <div class="controls">
+    <button class="btn-email"    onclick="runDemo('email')">▶ Run Email Demo</button>
+    <button class="btn-meeting"  onclick="runDemo('meeting')">▶ Run Meeting Demo</button>
+    <button class="btn-research" onclick="runDemo('research')">▶ Run Research Demo</button>
+    <button class="btn-reset"    onclick="resetAll()">↺ Reset All</button>
+  </div>
+
+<script>
+const TIMINGS = {
+  email:    [3000, 5000, 7000, 9000, 11000],
+  meeting:  [3000, 6000, 9000, 12000],
+  research: [3000, 7000, 12000, 16000, 20000],
+};
+
+let demoCount = 0;
+const completed = { email: false, meeting: false, research: false };
+
+function runDemo(type) {
+  if (completed[type]) return;
+
+  const badge   = document.getElementById(`badge-${type}`);
+  const steps   = TIMINGS[type].length;
+
+  badge.textContent = 'Running';
+  badge.className   = 'status-badge status-running';
+
+  TIMINGS[type].forEach((delay, i) => {
+    setTimeout(() => {
+      const step = document.getElementById(`${type}-${i + 1}`);
+      if (!step) return;
+      // Clear previous active
+      document.querySelectorAll(`#pipeline-${type} .step.active`).forEach(s => {
+        s.classList.remove('active');
+        s.classList.add('complete');
+      });
+      step.classList.add('active');
+
+      if (i === steps - 1) {
+        setTimeout(() => {
+          step.classList.remove('active');
+          step.classList.add('complete');
+          badge.textContent = 'Done';
+          badge.className   = 'status-badge status-done';
+          if (!completed[type]) {
+            completed[type] = true;
+            demoCount++;
+            document.getElementById('demoCount').textContent = `${demoCount} / 3`;
+          }
+        }, 2000);
+      }
+    }, delay);
+  });
+}
+
+function resetAll() {
+  ['email', 'meeting', 'research'].forEach(type => {
+    completed[type] = false;
+    document.getElementById(`badge-${type}`).textContent = 'Standby';
+    document.getElementById(`badge-${type}`).className   = 'status-badge status-standby';
+    document.querySelectorAll(`#pipeline-${type} .step`).forEach(s => {
+      s.classList.remove('active', 'complete');
+    });
+  });
+  demoCount = 0;
+  document.getElementById('demoCount').textContent = '0 / 3';
+}
+</script>
+</body>
+</html>

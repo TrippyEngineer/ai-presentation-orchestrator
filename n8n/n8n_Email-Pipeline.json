@@ -1,0 +1,546 @@
+{
+  "name": "email-pipeline",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "filters": {
+          "labelIds": [
+            "INBOX"
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        0
+      ],
+      "id": "f9a9679b-9ea8-41e2-9fe8-b1fa184aa99e",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YOUR_N8N_GMAIL_CRED_ID",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Subject: {{ $json['Subject'] }}\nFrom: {{ $json['From'] }}  \nBody: {{ $json.snippet }}\n",
+        "options": {
+          "systemMessage": "You are the executive email assistant for [YOUR NAME], [YOUR TITLE] at [Your Organization]. [YOUR NAME] operates at a senior program level working with government health systems, donors, and international partners.\n\nTEAM ROSTER:\n{{ $('Roster').all().map(p => p.json.Name + ' | ' + p.json.Role + ' | Keywords: ' + p.json.Keywords).join('\\n') }}\n\nSENDER DETAILS:\nThe sender's FROM field format is usually \"Full Name <email@domain.com>\". Extract the first name only (e.g. \"Ravi\" from \"Ravi Mehta <ravi@example.org>\"). If it's just an email address with no name, use the part before @ symbol. Never use \"[Sender]\" or \"there\". Use it in the greeting. If name cannot be determined, use \"there\".\n\nDRAFT REPLY RULES:\n- Write as [YOUR NAME] — senior, confident, warm but authoritative tone\n- Use sender's actual first name: \"Dear Ravi,\" not \"Dear [Sender],\"\n- 3-5 sentences — no fluff, no filler phrases like \"I hope this finds you well\"\n- Close with: \"Best regards,\\n[YOUR NAME]\\nAI & Digital Health Specialist | [Your Organization]\"\n- If escalation needed, acknowledge the urgency and mention the colleague being looped in\n- Match tone to context: urgent emails get decisive replies, informational emails get warm acknowledgements\n\nESCALATION RULES:\n- Set escalation_needed: true if email involves budget, funding, finance → escalate to [Finance Lead]\n- Set escalation_needed: true if email involves program delivery, field, HMIS, indicators → escalate to [Programme Lead]  \n- Set escalation_needed: true if email involves monitoring, evaluation, results → escalate to [M&E Lead]\n- Set escalation_needed: false for informational, newsletters, general queries\n\nRespond ONLY in valid JSON — no other text:\n{\n  \"classification\": \"URGENT\" or \"INFORMATIONAL\" or \"NEEDS_PROGRAM_INPUT\" or \"NEEDS_ESCALATION\",\n  \"reason\": \"one sentence\",\n  \"key_ask\": \"what sender needs or null\",\n  \"escalation_needed\": true or false,\n  \"escalate_to_name\": \"name from roster or null\",\n  \"escalate_to_email\": \"email from roster or null\",\n  \"escalation_reason\": \"why or null\",\n  \"draft_reply\": \"full professional reply as [YOUR NAME] with proper greeting and sign-off\",\n  \"note_to_colleague\": \"2-3 sentence FYI note to CC'd colleague or null\"\n}\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        832,
+        0
+      ],
+      "id": "17bf19aa-9214-44be-9fed-9d6221a47dff",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "claude-3-haiku-20240307",
+          "mode": "list",
+          "cachedResultName": "Claude Haiku 3"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.3,
+      "position": [
+        832,
+        240
+      ],
+      "id": "7929962e-da65-4f29-a38a-3dc6fcb18183",
+      "name": "Anthropic Chat Model",
+      "credentials": {
+        "anthropicApi": {
+          "id": "YOUR_N8N_ANTHROPIC_CRED_ID",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_TEAM_ROSTER_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Team Roster",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_TEAM_ROSTER_SHEET_ID/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_TEAM_ROSTER_SHEET_ID/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        384,
+        0
+      ],
+      "id": "1ed88c14-2591-463c-af71-6ee1870bd52e",
+      "name": "Roster",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_N8N_GSHEETS_CRED_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_EMAIL_LOG_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Email Log",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_EMAIL_LOG_SHEET_ID/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_EMAIL_LOG_SHEET_ID/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Date": "={{ $now }}",
+            "From": "={{ $if($('Normalize Email Input').isExecuted, $('Normalize Email Input').first().json['From'], $('Gmail Trigger').item.json['From']) }}\n",
+            "Subject": "={{ $if($('Normalize Email Input').isExecuted, $('Normalize Email Input').first().json['Subject'], $('Gmail Trigger').item.json['Subject']) }}\n",
+            " Classification": "={{ $('Parse JSON').item.json.classification }}",
+            " Key Ask": "={{ $('Parse JSON').item.json.key_ask }}",
+            " Escalated To": "={{ $('Parse JSON').item.json.escalate_to_name }}",
+            "Escalation Reason": "={{ $('Parse JSON').item.json.escalation_reason }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "From",
+              "displayName": "From",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Subject",
+              "displayName": "Subject",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": " Classification",
+              "displayName": " Classification",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": " Key Ask",
+              "displayName": " Key Ask",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": " Escalated To",
+              "displayName": " Escalated To",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Escalation Reason",
+              "displayName": "Escalation Reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1296,
+        0
+      ],
+      "id": "2813db4d-2d02-4b00-b3da-d9a2a6d56481",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_N8N_GSHEETS_CRED_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const rawOutput = $input.first().json.output;\n\n// Clean markdown wrappers\nlet cleaned = rawOutput.replace(/```json\\n?/gi,'').replace(/```\\n?/g,'').trim();\n\n// Extract only the JSON object\nconst start = cleaned.indexOf('{');\nconst end = cleaned.lastIndexOf('}');\nif (start !== -1 && end !== -1) cleaned = cleaned.slice(start, end + 1);\n\n// Fix unescaped newlines inside JSON strings (character by character)\nlet inString = false, escaped = false, result = '';\nfor (let i = 0; i < cleaned.length; i++) {\n  const ch = cleaned[i];\n  if (escaped) { result += ch; escaped = false; continue; }\n  if (ch === '\\\\') { result += ch; escaped = true; continue; }\n  if (ch === '\"') { inString = !inString; result += ch; continue; }\n  if (inString && ch === '\\n') { result += '\\\\n'; continue; }\n  if (inString && ch === '\\r') { continue; }\n  if (inString && ch === '\\t') { result += '\\\\t'; continue; }\n  result += ch;\n}\n\nlet parsed;\ntry {\n  parsed = JSON.parse(result);\n} catch(e) {\n  parsed = {\n    classification: 'INFORMATIONAL', reason: 'Parse fallback',\n    key_ask: null, escalation_needed: false,\n    escalate_to_name: null, escalate_to_email: null,\n    escalation_reason: null, note_to_colleague: null,\n    draft_reply: 'Thank you for your email. I will review and respond shortly.\\n\\nBest regards,\\n[YOUR NAME]\\nAI & Digital Health Specialist | [Your Organization]'\n  };\n}\n\n// Restore real line breaks in email body\nif (parsed.draft_reply) {\n  parsed.draft_reply = parsed.draft_reply.replace(/\\\\n/g, '\\n');\n}\n\n// ── Grab From/Subject/ThreadId from whichever trigger fired ──\nconst normalizeNode = $('Normalize Email Input').isExecuted\n  ? $('Normalize Email Input').first()?.json\n  : null;\n\nconst gmailNode = (() => {\n  try { return $('Gmail Trigger').first()?.json; } catch(e) { return null; }\n})();\n\nconst fromField    = normalizeNode?.['From']    || gmailNode?.['From']    || '';\nconst subjectField = normalizeNode?.['Subject'] || gmailNode?.['Subject'] || '';\nconst threadField = normalizeNode?.threadId || gmailNode?.threadId || '';\n\n// Extract sender first name\nlet firstName = 'there';\nconst displayMatch = fromField.match(/^\"?([A-Za-z][^\"<@]+?)\"?\\s*</);\nif (displayMatch) {\n  firstName = displayMatch[1].trim().split(/\\s+/)[0];\n  firstName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();\n} else {\n  const prefix = fromField.split('@')[0].replace(/[^a-zA-Z]/g, '');\n  if (prefix) firstName = prefix.charAt(0).toUpperCase() + prefix.slice(1);\n}\n\n// Fix any bad greeting patterns\nif (parsed.draft_reply) {\n  parsed.draft_reply = parsed.draft_reply\n    .replace(/Dear\\s*,/gi, `Dear ${firstName},`)\n    .replace(/Dear \\[Sender\\]/gi, `Dear ${firstName}`)\n    .replace(/Dear [Tt]here/gi, `Dear ${firstName}`)\n    .replace(/Hi\\s*,/gi, `Hi ${firstName},`)\n    .replace(/Hi \\[Sender\\]/gi, `Hi ${firstName}`);\n}\n\nreturn [{ json: {\n  ...parsed,\n  sender_name: firstName,\n  gmail_from: fromField,\n  gmail_subject: subjectField,\n  gmail_thread_id: threadField\n}}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        160
+      ],
+      "id": "3ac84ef1-1e9d-4710-90a4-4313303bd85a",
+      "name": "Parse JSON"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "187cba40-6f47-42d5-adef-c49ad4417407",
+              "leftValue": "={{ $('Parse JSON').item.json.escalation_needed }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1504,
+        0
+      ],
+      "id": "2a1b125c-2994-4e6c-8fa5-b150332a993f",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "resource": "draft",
+        "subject": "=Re: {{ $('Gmail Trigger').first().json['Subject'] }}\n",
+        "message": "={{ $('Parse JSON').item.json.draft_reply }}",
+        "options": {
+          "ccList": "={{ $('Parse JSON').item.json.escalate_to_email }}",
+          "threadId": "={{ $('Parse JSON').first().json.gmail_thread_id }}",
+          "sendTo": "={{ \n  $if(\n    $('Normalize Email Input').isExecuted,\n    $('Normalize Email Input').first().json['From'],\n    $('Gmail Trigger').first().json['From']\n  ).match(/<(.+?)>/)?.[1] \n  || \n  $if(\n    $('Normalize Email Input').isExecuted,\n    $('Normalize Email Input').first().json['From'],\n    $('Gmail Trigger').first().json['From']\n  )\n}}\n"
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1712,
+        -64
+      ],
+      "id": "9e636117-652c-4b9a-8294-dc20099dc296",
+      "name": "TRUE branch - with CC",
+      "webhookId": "59f1b50e-a9ef-436a-a901-16ef08bd7d00",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YOUR_N8N_GMAIL_CRED_ID",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "draft",
+        "subject": "=Re: {{ $('Gmail Trigger').first().json['Subject'] }}",
+        "message": "={{ $('Parse JSON').item.json.draft_reply }}",
+        "options": {
+          "threadId": "={{ $('Parse JSON').first().json.gmail_thread_id }}",
+          "sendTo": "={{ \n  $if(\n    $('Normalize Email Input').isExecuted,\n    $('Normalize Email Input').first().json['From'],\n    $('Gmail Trigger').first().json['From']\n  ).match(/<(.+?)>/)?.[1] \n  || \n  $if(\n    $('Normalize Email Input').isExecuted,\n    $('Normalize Email Input').first().json['From'],\n    $('Gmail Trigger').first().json['From']\n  )\n}}\n"
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1712,
+        240
+      ],
+      "id": "fa632786-cfdf-457c-97ac-35774d7db124",
+      "name": "FALSE branch - no escalation",
+      "webhookId": "72500575-e715-44e5-9a19-c972016192b2",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YOUR_N8N_GMAIL_CRED_ID",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "{\n  \"from\": \"={{ $('Gmail Trigger').first().json['From'] }}\",\n  \"subject\": \"={{ $('Gmail Trigger').first().json['Subject'] }}\",\n  \"text\": \"={{ $('Gmail Trigger').first().json.text }}\",\n  \"threadId\": \"={{ $('Gmail Trigger').first().json.threadId }}\"\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        208,
+        0
+      ],
+      "id": "e100006a-369d-479d-9660-1a845cf180d8",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        544,
+        -160
+      ],
+      "id": "37661e10-cf35-4463-a5d3-a32c400df789",
+      "name": "Limit"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "email-demo",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        224
+      ],
+      "id": "f33411b9-d3c9-4a26-ab87-b938c1dc3ea0",
+      "name": "Webhook",
+      "webhookId": "98d99397-7a92-4aa3-afcd-0f957af11525"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst body = input.body || input;\n\n// Inject fake Gmail Trigger format so AI Agent prompt works\nreturn [{\n  json: {\n    Subject: body.Subject || body.subject || \"Q1 Programme Update Request\",\n    From: body.From || body.from || \"Sarah Johnson <sarah.johnson@example.org>\",\n    snippet: body.snippet || body.body || body.email_body || \"\",\n    text: body.text || body.body || body.email_body || \"\",\n    threadId: body.threadId || \"demo-thread-001\"\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        192,
+        224
+      ],
+      "id": "4eef5da7-f44a-4e8c-b077-953c9c8051b9",
+      "name": "Normalize Email Input"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Gmail Trigger data was lost — restore it explicitly\nconst emailData = $('Gmail Trigger').first().json;\nconst rosterData = $('Roster').first().json;  // for lookup only\n\nreturn [{\n  json: {\n    ...emailData,  // Subject, From, Body, threadId\n    roster_keywords: rosterData.Keywords  // for Claude lookup\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        688,
+        0
+      ],
+      "id": "c463e59c-aa83-484d-80ea-8da1e05e8415",
+      "name": "Code in JavaScript"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Anthropic Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Roster": {
+      "main": [
+        [
+          {
+            "node": "Limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Parse JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse JSON": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "TRUE branch - with CC",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "FALSE branch - no escalation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Roster",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limit": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Normalize Email Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Email Input": {
+      "main": [
+        [
+          {
+            "node": "Roster",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "d82a29d8-7762-4527-bd8a-ca97869407e5",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "YOUR_N8N_INSTANCE_ID"
+  },
+  "id": "6pCK2ms3uUj6xqEi",
+  "tags": []
+}

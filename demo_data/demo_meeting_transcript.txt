@@ -1,0 +1,104 @@
+Country Team Meeting (Sample)
+Date: [Sample Date]
+Attendees: Alex (facilitator), Dr. Amara Diallo (Country Lead),
+           James Okonkwo (M&E Manager), Fatima Hassan (Programme Officer),
+           Dr. Sarah Kimani (Health Systems Advisor)
+
+---
+
+Alex: Okay let's get started. We have about 45 minutes.
+Main agenda is the Q1 review, the supply chain issue that
+came up last week, and the donor report deadline. Amara,
+do you want to kick off?
+
+Dr. Amara Diallo: Yes. So Q1 coverage numbers are actually
+better than we expected. We hit 73% for the SMC distribution
+in Kisumu and Nakuru. The challenge is Mombasa — we're at
+51% and that's because of the CHW training backlog. James,
+you want to speak to that?
+
+James Okonkwo: Right so we have 34 CHWs who haven't completed
+the updated protocol training. It was supposed to happen in
+January but the training venue fell through. We've rebooked
+for March 8th but that's going to push our Q1 close numbers.
+I think we need to flag this to the donor.
+
+Fatima Hassan: I agree we need to flag it but I want to make
+sure we frame it right. It's not a programme failure, it's a
+logistics issue that we've already resolved. Can we get that
+language into the donor report clearly?
+
+Dr. Sarah Kimani: The other thing we need to discuss is the
+cold chain issue in Nakuru. Three refrigeration units failed
+in the last two weeks. I've been in contact with the supplier
+but I don't have a confirmed replacement date yet. This could
+affect Q2 distribution.
+
+Alex: Okay so we have a few action items emerging. James,
+can you own the CHW training completion and make sure March 8th
+is confirmed? And can you give me a number by Friday — how
+many CHWs will be trained by Q1 close?
+
+James Okonkwo: Yes I can do that. I'll send you the confirmed
+number by end of day Friday.
+
+Alex: Sarah, the cold chain issue — who is the supplier
+contact and when can we expect a resolution?
+
+Dr. Sarah Kimani: The supplier is MedEquip Ltd. I've spoken
+to their logistics manager but they haven't given me a date.
+I think we need to escalate — maybe Amara can make a direct
+call to their country director.
+
+Dr. Amara Diallo: I can do that. Let me try to reach him this
+week. But I want to be clear — if we don't have replacement
+units by March 15th we are looking at a real Q2 risk.
+
+Alex: Noted. Amara, please make that call and let us know
+by Wednesday what the timeline looks like.
+
+Fatima Hassan: On the donor report — the deadline is March 5th.
+I've started drafting but I need the final Q1 coverage numbers
+from James and the cold chain status from Sarah before I can
+finish the risk section. When can I get those?
+
+James Okonkwo: I'll have the numbers by Friday as I said.
+
+Dr. Sarah Kimani: I should have clarity on cold chain by
+Wednesday after Amara speaks to the supplier.
+
+Fatima Hassan: Okay so realistically I can finish the draft
+by March 3rd if I have both by Wednesday-Friday. That gives
+us two days to review before the deadline.
+
+Alex: That's tight but workable. Let's put March 3rd as
+internal draft deadline. Everyone should review by March 4th,
+submit to donor March 5th.
+
+Dr. Amara Diallo: One more thing — there's an internal
+review scheduled for March 10th with headquarters. I haven't
+received the agenda yet. Someone from HQ said they want to
+discuss the country scale-up plan but I'm not sure who is
+leading that on the HQ side. Can someone follow up?
+
+Alex: I'll take that — I'll reach out to headquarters
+today and find out who the lead is and get the agenda.
+
+Alex: Okay let's close. Summary of what I heard: James
+owns CHW training confirmation by Friday. Amara is calling
+MedEquip Ltd country director this week, update by Wednesday.
+Fatima is drafting the donor report, needs both inputs.
+Internal draft by March 3rd, submit March 5th. I'll follow
+up on the HQ meeting agenda. Does anyone have anything else?
+
+Dr. Sarah Kimani: Just to note — the unclear item is the
+cold chain replacement. We have a date dependency there that
+nobody fully owns yet. If MedEquip doesn't respond to Amara,
+what's the escalation path?
+
+Alex: Good point Sarah. If no response by Wednesday,
+Amara escalates to Country Director. Let's make
+that the fallback. Okay, thanks everyone.
+
+---
+[Meeting ends: 47 minutes]

@@ -12,7 +12,7 @@ import time
 import platform
 from pathlib import Path
 
-from logger import get_logger
+from core.logger import get_logger
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -196,7 +196,7 @@ print()
 # ── 7. VOICE CONFIGURATION ────────────────────────────────────────────
 print("[ VOICE CONFIGURATION ]")
 try:
-    from voice_engine import VOICE, RATE
+    from agents.script_agent import VOICE, RATE
     ok(f"Voice: {VOICE}   Rate: {RATE}")
 except Exception as e:
     warn(f"Could not check voice config: {e}")

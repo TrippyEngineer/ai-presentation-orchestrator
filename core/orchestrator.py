@@ -25,8 +25,8 @@ import platform
 from pathlib import Path
 from dotenv import load_dotenv
 
-from logger import get_logger, log_slide_event, log_demo_event, log_n8n_event
-from voice_engine import VOICE as TTS_VOICE, synthesise as tts_synthesise, play_audio as play_audio_blocking
+from core.logger import get_logger, log_slide_event, log_demo_event, log_n8n_event
+from integrations.voice_engine import VOICE as TTS_VOICE, synthesise as tts_synthesise, play_audio as play_audio_blocking
 
 load_dotenv()
 log = get_logger("orchestrator")

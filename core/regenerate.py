@@ -16,7 +16,7 @@ import os, sys, json, time, asyncio, subprocess, platform
 from pathlib import Path
 from dotenv import load_dotenv
 
-from logger import get_logger, log_slide_event
+from core.logger import get_logger, log_slide_event
 
 load_dotenv()
 log = get_logger("regenerate")

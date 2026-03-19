@@ -18,7 +18,7 @@ import os
 import json
 from pathlib import Path
 from dotenv import load_dotenv
-from logger import get_logger
+from core.logger import get_logger
 
 load_dotenv()
 log = get_logger("gslides_reader")

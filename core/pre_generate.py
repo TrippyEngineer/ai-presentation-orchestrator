@@ -14,10 +14,10 @@ import time
 from pathlib import Path
 from dotenv import load_dotenv
 
-from logger import get_logger, log_slide_event
-from slide_reader import extract_slide_content
-from script_agent import generate_speech_for_slide, DEMO_SLIDES
-from voice_engine import batch_synthesise, get_audio_duration, VOICE, RATE
+from core.logger import get_logger, log_slide_event
+from agents.slide_reader import extract_slide_content
+from agents.script_agent import generate_speech_for_slide, DEMO_SLIDES
+from integrations.voice_engine import batch_synthesise, get_audio_duration, VOICE, RATE
 
 load_dotenv()
 log = get_logger("pre_generate")

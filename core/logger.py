@@ -6,7 +6,7 @@ All modules import from here. Logs go to:
 - Console stderr (WARNING+ only, to keep terminal clean during presentation)
 
 Usage:
-    from logger import get_logger
+    from core.logger import get_logger
     log = get_logger(__name__)
     log.info("Slide 3 audio started")
     log.error("n8n webhook failed", exc_info=True)

@@ -18,7 +18,7 @@ import time
 import requests
 from pathlib import Path
 from dotenv import load_dotenv
-from logger import get_logger
+from core.logger import get_logger
 
 load_dotenv()
 log = get_logger("heygen_engine")

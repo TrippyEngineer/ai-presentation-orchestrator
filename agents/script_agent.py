@@ -15,7 +15,7 @@ Configure via .env:
 import os
 from dotenv import load_dotenv
 from anthropic import Anthropic
-from logger import get_logger
+from core.logger import get_logger
 
 load_dotenv()
 log = get_logger("script_agent")

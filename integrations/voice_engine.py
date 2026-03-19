@@ -16,7 +16,7 @@ import time
 import threading
 from pathlib import Path
 
-from logger import get_logger, log_audio_event
+from core.logger import get_logger, log_audio_event
 from dotenv import load_dotenv
 
 load_dotenv()

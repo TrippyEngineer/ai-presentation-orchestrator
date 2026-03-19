@@ -1,3 +1,4 @@
+<div align="center">
 
 # AI Presentation Orchestrator
 
@@ -7,6 +8,7 @@ Pre-generate everything. Cache it. Walk in and press Enter.
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776ab?logo=python&logoColor=white)](https://python.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-22c55e)](LICENSE)
 
+</div>
 
 ---
 
@@ -15,8 +17,9 @@ Pre-generate everything. Cache it. Walk in and press Enter.
 - **Two-phase system design** — generation and runtime are fully decoupled. All LLM calls, TTS synthesis, and video rendering happen before the presentation. The runtime reads a manifest and executes deterministically.
 - **Cache-first pipeline** — every output is stored with a manifest. Partial runs resume from where they stopped. Nothing is regenerated unless explicitly forced.
 - **Multi-modal orchestration** — synchronises audio playback, slide advancement, and live webhook triggers from a single timing source (actual media duration).
-- **Modular integration layer** — TTS, avatar video, slide control, n8n, Slack, and Google APIs are all isolated modules. Swapping any one of them does not affect the core pipeline.
-- **Agentic research workflow** — the Evidence Intelligence Engine decomposes a research question into sub-queries, runs dual web and academic search via Perplexity, evaluates evidence quality, and iterates before synthesis. Built entirely in n8n with Claude.
+- **Modular integration layer** — TTS, avatar video, n8n, Slack, and Google APIs are all isolated modules. Swapping any one of them does not affect the core pipeline.
+- **Live voice Q&A** — final slide activates a mic listener. Audience questions are captured via speech recognition, answered by Claude in persona, and spoken aloud via TTS. Conversation history is maintained across turns.
+- **Agentic research workflow** — the Evidence Intelligence Engine decomposes a research question into sub-queries, runs dual web and academic search via Perplexity, evaluates evidence quality, and iterates before synthesis.
 
 ---
 
@@ -24,7 +27,7 @@ Pre-generate everything. Cache it. Walk in and press Enter.
 
 Live AI demos break at the worst moment.
 
-API latency spikes. Video renders for 8 minutes. The webhook times out.
+API latency spikes. Video renders for 8 minutes. The webhook times out.  
 You are standing in front of a room and your terminal is showing a spinner.
 
 The issue is not the tools. It is **running generation and performance in the same process**.
@@ -43,6 +46,10 @@ Resumable — re-runs skip already-completed slides.
 **Phase 2 — Orchestration** (`python -m core.orchestrator`)  
 Reads the manifest. Plays audio. Advances slides. Fires demo webhooks at configured slides.
 No API calls. No generation. Deterministic from start to finish.
+
+**Phase 3 — Live Q&A** (final slide, automatic)  
+Mic opens. Audience speaks. Claude answers in presenter persona. TTS reads the answer aloud.
+Loop continues until Q is pressed, 3 consecutive timeouts, or an exit phrase is detected.
 
 ---
 
@@ -94,20 +101,20 @@ ai-presentation-orchestrator/
 │   ├── orchestrator.py          main runtime controller
 │   ├── pre_generate.py          pre-generation pipeline
 │   ├── regenerate.py            selective slide regeneration
-│   └── diagnose.py              pre-flight system checks
+│   ├── diagnose.py              pre-flight system checks
+│   └── logger.py                structured run logging
 │
 ├── agents/
-│   └── script_agent.py          LLM-based narration script generator
+│   ├── script_agent.py          Claude narration script writer
+│   ├── slide_controller.py      PyAutoGUI slide advancement + focus control
+│   └── slide_reader.py          PPTX parser
 │
 ├── integrations/
-│   ├── voice_engine.py          Edge TTS + audio duration detection
-│   ├── heygen_engine.py         HeyGen avatar video (optional)
-│   ├── slide_controller.py      PyAutoGUI slide control
-│   ├── slide_reader.py          PPTX parser
+│   ├── voice_engine.py          Edge TTS synthesis + audio playback + duration
+│   ├── heygen_engine.py         HeyGen avatar video rendering (optional)
 │   ├── google_slides_reader.py  Google Slides API reader
 │   ├── n8n_trigger.py           n8n webhook triggers
-│   ├── slack_notifier.py        Slack notifications
-│   └── logger.py                structured logging
+│   └── slack_notifier.py        Slack notifications
 │
 ├── n8n/
 │   ├── Email-Pipeline.json
@@ -120,9 +127,10 @@ ai-presentation-orchestrator/
 │   └── research_question.txt
 │
 ├── docs/
+│   ├── architecture.svg         system architecture diagram
 │   └── RUNBOOK.md               presentation-day checklist
 │
-├── cache/                       auto-created — gitignored
+├── cache/                       auto-created at runtime — gitignored
 ├── logs/                        runtime logs — gitignored
 ├── workflow_monitor.html        live demo status page (no server needed)
 ├── credentials.example.json
@@ -149,7 +157,7 @@ python -m core.pre_generate      # run 15–20 min before the talk
 python -m core.orchestrator      # run when ready
 ```
 
-**ffmpeg is required** for audio duration detection and is not pip-installable:
+**ffmpeg is required** for audio handling and is not pip-installable:
 
 | OS | Install |
 |----|---------|
@@ -164,6 +172,11 @@ python -m core.orchestrator      # run when ready
 ```env
 # Required
 ANTHROPIC_API_KEY=sk-ant-...
+
+# Presenter identity — used by the live Q&A persona
+PRESENTER_NAME=Your Name
+PRESENTER_ROLE=Your Role
+ORGANIZATION=Your Organization
 
 # Voice — Edge TTS is free and needs no key (default)
 # To use HeyGen avatar video instead:
@@ -219,8 +232,9 @@ python -m core.diagnose
 |---------|-----|
 | No audio | Run `ffplay -version` — if it fails, ffmpeg is not on PATH |
 | Slides not advancing | Click the presentation window once to give it keyboard focus |
-| Webhook fails | Confirm n8n is running on port 5678 and workflows are Active |
+| Webhook fails | Confirm n8n is running on port 5678 and all workflows are Active |
 | Pre-generation crashes | Re-run — completed slides are skipped automatically |
+| Q&A mic not working | Run `pip install SpeechRecognition pyaudio` |
 
 Logs: `logs/presentation_YYYYMMDD.log`
 
@@ -228,7 +242,7 @@ Logs: `logs/presentation_YYYYMMDD.log`
 
 ## Workflow Monitor
 
-Open `workflow_monitor.html` in any browser before the talk.
+Open `workflow_monitor.html` in any browser before the talk.  
 No server. No dependencies. Shows live status of all three demo pipelines as they run.
 
 ---
